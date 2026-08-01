@@ -33,7 +33,19 @@ var ChartConfig = {
   _filterHourlyByRange: function(data, range) {
     if (range === 'all' || !range) return data;
     var now = new Date();
-    var cutoff = new Date(now.getTime() - range * 86400000);
+    // Handle hours-based ranges like '24h', '48h'
+    if (typeof range === 'string' && /^\d+h$/.test(range)) {
+      var hours = parseInt(range, 10);
+      var cutoff = new Date(now.getTime() - hours * 3600000);
+      var y = cutoff.getFullYear();
+      var m = String(cutoff.getMonth() + 1).padStart(2, '0');
+      var d = String(cutoff.getDate()).padStart(2, '0');
+      var cutoffStr = y + '-' + m + '-' + d;
+      return data.filter(function(item) { return item.date >= cutoffStr; });
+    }
+    // Days-based ranges
+    var days = typeof range === 'string' ? parseInt(range, 10) : range;
+    var cutoff = new Date(now.getTime() - days * 86400000);
     var y = cutoff.getFullYear();
     var m = String(cutoff.getMonth() + 1).padStart(2, '0');
     var d = String(cutoff.getDate()).padStart(2, '0');

@@ -199,8 +199,19 @@ var Analytics = {
     if (!hourlyData || hourlyData.length === 0) return [];
     var data = hourlyData.slice().sort(function (a, b) { return a.dateHour.localeCompare(b.dateHour); });
     if (range === 'all' || range === undefined || range === null) return data;
+
+    // Handle hours-based ranges like '24h', '48h'
+    if (typeof range === 'string' && /^\d+h$/.test(range)) {
+      var hours = parseInt(range, 10);
+      var cutoff = new Date(Date.now() - hours * 3600000);
+      var cutoffStr = cutoff.getFullYear() + '-' + String(cutoff.getMonth() + 1).padStart(2, '0') + '-' + String(cutoff.getDate()).padStart(2, '0');
+      return data.filter(function (d) { return d.date >= cutoffStr; });
+    }
+
+    // Days-based ranges (numeric string or number)
+    var days = typeof range === 'string' ? parseInt(range, 10) : range;
     var now = new Date();
-    var cutoff = new Date(now.getTime() - range * 86400000);
+    var cutoff = new Date(now.getTime() - days * 86400000);
     var cutoffStr = cutoff.getFullYear() + '-' + String(cutoff.getMonth() + 1).padStart(2, '0') + '-' + String(cutoff.getDate()).padStart(2, '0');
     return data.filter(function (d) { return d.date >= cutoffStr; });
   },
