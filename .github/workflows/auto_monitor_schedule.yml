@@ -80,8 +80,8 @@ jobs:
         branch=${GITHUB_REF##*/}
         echo "Current branch: $branch"
 
-        # 提交 data/ 目录的变更（如果有）
-        git add -A data/ || echo "no data/ changes"
+        # 提交 docs/data/ 目录的变更（data 是软链接指向 docs/data）
+        git add -A docs/data/ || echo "no docs/data changes"
         git commit -m "Auto update: data (run ${GITHUB_RUN_ID})" -q || echo "No data changes to commit"
 
         # 提交 logs/ 目录的变更（如果有）
