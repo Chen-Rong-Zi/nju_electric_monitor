@@ -443,7 +443,12 @@ var ChartConfig = {
     var canvas = document.getElementById(canvasId);
     if (!canvas) return;
     this.destroy(canvasId);
-    if (!accelData || accelData.length < 2) return;
+    var hint = document.getElementById('empty-' + canvasId);
+    if (!accelData || accelData.length < 2) {
+      if (hint) hint.style.display = 'flex';
+      return;
+    }
+    if (hint) hint.style.display = 'none';
 
     var labels = accelData.map(function(d) { return d.date; });
     var values = accelData.map(function(d) { return d.avg7; });

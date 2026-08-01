@@ -86,6 +86,7 @@ body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--fo
 /* Chart */
 .chart-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow); }
 .chart-container { position: relative; height: 300px; width: 100%; }
+.chart-empty-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 0.9rem; }
 
 /* Speed dashboard */
 .speed-dashboard { text-align: center; }
@@ -323,7 +324,7 @@ body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--fo
       <div class="section-header">
         <div class="section-title">📈 能耗趋势加速度</div>
       </div>
-      <div class="chart-container"><canvas id="chart-acceleration"></canvas></div>
+      <div class="chart-container"><canvas id="chart-acceleration"></canvas><div id="empty-chart-acceleration" class="chart-empty-hint">需要至少 7 天数据</div></div>
     </div>
 
     <!-- Period Comparison -->
