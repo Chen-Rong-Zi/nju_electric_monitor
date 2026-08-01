@@ -30,11 +30,11 @@
 
 ### 电量变化趋势
 
-![电量变化曲线](data/electricity_trend.png)
+![电量变化曲线](docs/data/electricity_trend.png)
 
 ### 最近 20 次电量变化
 
-![最近20次电量变化](data/recent_20_changes.png)
+![最近20次电量变化](docs/data/recent_20_changes.png)
 
 ---
 
