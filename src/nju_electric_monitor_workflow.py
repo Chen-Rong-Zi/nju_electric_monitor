@@ -1402,7 +1402,96 @@ class NJUElectricMonitor:
         except Exception as e:
             self.logger.error(f"等待登录成功时出错: {e}")
             return False
-    
+
+    def select_room(self, room_config: str):
+        """
+        根据配置选择对应的宿舍房间。
+        在房间列表页面中查找匹配 buildName/roomName 的项，选中其 radio button，
+        并通过 Vue 的 check() 方法同步内部状态。
+
+        room_config 格式: "buildName/roomName"，例如 "4幢/4A211"
+        空字符串时不做任何操作，保持默认行为（选中最后一个房间）。
+        """
+        if not room_config:
+            self.logger.info("room_config 为空，跳过房间选择（使用默认选中）")
+            return True
+
+        self.logger.info(f"尝试选择房间: {room_config}")
+
+        # 1. 等待房间列表加载
+        try:
+            WebDriverWait(self.driver, 15).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".cent-list"))
+            )
+            self.logger.info("房间列表已加载")
+        except TimeoutException:
+            self.logger.warning("房间列表加载超时（15s），跳过房间选择")
+            return False
+
+        # 2. 获取所有房间元素
+        room_divs = self.driver.find_elements(By.CSS_SELECTOR, ".cent-list")
+        if not room_divs:
+            self.logger.warning("未找到任何房间元素，跳过房间选择")
+            return False
+
+        self.logger.info(f"共找到 {len(room_divs)} 个房间")
+
+        # 3. 遍历匹配配置的房间
+        matched_index = -1
+        for i, div in enumerate(room_divs):
+            try:
+                span = div.find_element(By.CSS_SELECTOR, "span")
+                text = span.text.strip()
+                # 文本格式: "仙林校区 4幢 4A211" → split() 取后两部分
+                parts = text.split()
+                if len(parts) < 2:
+                    self.logger.debug(f"房间 {i} 文本格式异常: {text!r}")
+                    continue
+                build_name = parts[-2]
+                room_name = parts[-1]
+                combined = f"{build_name}/{room_name}"
+                self.logger.debug(f"房间 {i}: text={text!r}, combined={combined!r}")
+                if combined == room_config:
+                    matched_index = i
+                    self.logger.info(f"找到匹配房间: {text} (索引 {i})")
+                    break
+            except Exception as e:
+                self.logger.debug(f"解析房间 {i} 时出错: {e}")
+                continue
+
+        if matched_index == -1:
+            self.logger.warning(f"未找到匹配配置的房间: {room_config}")
+            return False
+
+        # 4. 选中匹配的房间
+        try:
+            target_div = room_divs[matched_index]
+
+            # 4a. 点击 radio button
+            try:
+                radio = target_div.find_element(By.CSS_SELECTOR, "input[type='radio']")
+                radio.click()
+                self.logger.info(f"已点击房间 {matched_index} 的 radio button")
+            except Exception as e:
+                self.logger.warning(f"点击 radio button 失败: {e}")
+
+            # 4b. 通过 JavaScript 同步 Vue 内部状态
+            try:
+                self.driver.execute_script(
+                    "document.querySelector('#app').__vue__.check(arguments[0])",
+                    matched_index
+                )
+                self.logger.info(f"已通过 Vue check({matched_index}) 同步房间选择状态")
+            except Exception as e:
+                self.logger.warning(f"Vue check() 调用失败，降级为仅点击 radio: {e}")
+
+            self.logger.info(f"房间选择完成: {room_config}")
+            return True
+
+        except Exception as e:
+            self.logger.error(f"选择房间时出错: {e}")
+            return False
+
     def click_recharge_button(self):
         """点击'去充值'按钮"""
         try:
