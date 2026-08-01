@@ -257,9 +257,7 @@ tr.highlight{background:color-mix(in oklch,var(--warning) 8%,transparent)}
 
 <script>
 // ====== 配置 ======
-const DATA_URL = window.location.hostname.includes('github.io')
-  ? 'https://raw.githubusercontent.com/Chen-Rong-Zi/nju_electric_monitor/master/data/electricity_data.json'
-  : 'data/electricity_data.json';
+const DATA_URL = 'data/electricity_data.json';
 
 // ====== 数据加载 ======
 async function fetchData() {
