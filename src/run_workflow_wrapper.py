@@ -176,7 +176,7 @@ try:
 
             for attempt in range(1, MAX_RETRIES + 1):
                 if attempt > 1:
-                    lf.write(f"\n=== 第 {attempt} 次重试（{datetime.now(BEIJING_TZ).isoformat()}）===\n")
+                    lf.write(f"\n=== 第 {attempt} 次重试（{datetime.now(BEIJING_TZ if BEIJING_TZ else None).isoformat()}）===\n")
                     lf.flush()
                     time.sleep(RETRY_DELAY_SECONDS)
 
@@ -185,6 +185,7 @@ try:
                         [sys.executable, workflow_path],
                         stdout=lf,
                         stderr=lf,
+                        timeout=300,
                     )
                     exit_code = result.returncode
                     if result.returncode == 0:
@@ -193,6 +194,9 @@ try:
                     else:
                         lf.write(f"Workflow script exited with code {result.returncode}\n")
                         lf.flush()
+                except subprocess.TimeoutExpired:
+                    lf.write("Workflow script timed out (300s), will retry\n")
+                    lf.flush()
                 except Exception as e:
                     lf.write(f"Workflow script raised exception: {e}\n")
                     traceback.print_exc(file=lf)
