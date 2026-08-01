@@ -12,8 +12,7 @@
   async function init() {
     try {
       showLoading();
-      const raw = await DataService.fetchData();
-      _data = DataService.processData(raw);
+      _data = await DataService.fetchData();
       if (_data.length === 0) throw new Error('暂无数据');
       _diffs = DataService.calcDiffs(_data);
       _hourly = DataService.toHourly(_diffs, _data);
