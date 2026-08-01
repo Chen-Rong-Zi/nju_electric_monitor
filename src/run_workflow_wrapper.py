@@ -2,6 +2,7 @@
 import faulthandler
 import sys
 import os
+import time
 import traceback
 from datetime import datetime
 try:
@@ -168,16 +169,39 @@ try:
             lf.write(f"Running workflow script: {workflow_path}\n")
             lf.flush()
 
-            result = subprocess.run(
-                [sys.executable, workflow_path],
-                stdout=lf,
-                stderr=lf,
-            )
+            MAX_RETRIES = 3
+            RETRY_DELAY_SECONDS = 30
+            success = False
+            exit_code = 1
 
-            if result.returncode != 0:
-                lf.write(f"Workflow script exited with code {result.returncode}\n")
+            for attempt in range(1, MAX_RETRIES + 1):
+                if attempt > 1:
+                    lf.write(f"\n=== 第 {attempt} 次重试（{datetime.now(BEIJING_TZ).isoformat()}）===\n")
+                    lf.flush()
+                    time.sleep(RETRY_DELAY_SECONDS)
+
+                try:
+                    result = subprocess.run(
+                        [sys.executable, workflow_path],
+                        stdout=lf,
+                        stderr=lf,
+                    )
+                    exit_code = result.returncode
+                    if result.returncode == 0:
+                        success = True
+                        break
+                    else:
+                        lf.write(f"Workflow script exited with code {result.returncode}\n")
+                        lf.flush()
+                except Exception as e:
+                    lf.write(f"Workflow script raised exception: {e}\n")
+                    traceback.print_exc(file=lf)
+                    lf.flush()
+
+            if not success:
+                lf.write(f"所有 {MAX_RETRIES} 次尝试均失败（最后退出码: {exit_code}）\n")
                 lf.flush()
-                raise SystemExit(result.returncode)
+                raise SystemExit(exit_code)
 
         except Exception:
             # 记录任何在运行 workflow 脚本时发生的异常
