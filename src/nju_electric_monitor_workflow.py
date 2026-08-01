@@ -88,7 +88,8 @@ class NJUElectricMonitor:
         self.alert_threshold_high = float(self.config.get("alert_threshold_high", 10))
         self.alert_threshold_critical = float(self.config.get("alert_threshold_critical", 5))
         # 房间选择配置（格式: "buildName/roomName"，如 "4幢/4A211"，空字符串禁用）
-        self.room_config = self.config.get("room", "")
+        # 优先从环境变量 NJU_ROOM 读取（由 GitHub Actions 注入），若不存在则使用配置文件中的值
+        self.room_config = os.environ.get('NJU_ROOM', self.config.get("room", ""))
         # 测试模式：在关键步骤保存页面快照到 data/test_snapshots_workflow
         self.test_mode = bool(self.config.get("test_mode", False))
         self.driver = None
