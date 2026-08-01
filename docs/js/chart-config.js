@@ -444,14 +444,14 @@ var ChartConfig = {
     if (!canvas) return;
     this.destroy(canvasId);
     var hint = document.getElementById('empty-' + canvasId);
-    if (!accelData || accelData.length < 2) {
+    if (!accelData || accelData.length < 1) {
       if (hint) hint.style.display = 'flex';
       return;
     }
     if (hint) hint.style.display = 'none';
 
     var labels = accelData.map(function(d) { return d.date; });
-    var values = accelData.map(function(d) { return d.avg7; });
+    var values = accelData.map(function(d) { return d.avg; });
 
     var lineColor = isAccelerating ? '#ef4444' : '#10b981';
     var fillColor = isAccelerating ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)';
@@ -462,7 +462,7 @@ var ChartConfig = {
       data: {
         labels: labels,
         datasets: [{
-          label: '7日平均用电量',
+          label: '滑动平均用电量',
           data: values,
           borderColor: lineColor,
           backgroundColor: fillColor,

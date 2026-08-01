@@ -428,57 +428,51 @@ var Analytics = {
   },
 
   // === Trend Acceleration ===
-  // Returns: { slope: number, isAccelerating: boolean, data: [{date: string, avg7: number}] }
-  // 7-day sliding average of daily consumption, compare two 7-day windows
+  // Returns: { slope: number, isAccelerating: boolean, data: [{date: string, avg: number}] }
+  // Uses individual consumption records with a sliding window for trend detection
   trendAcceleration: function (diffs) {
     if (!diffs || diffs.length === 0) {
       return { slope: 0, isAccelerating: false, data: [] };
     }
 
-    // Group by date (Beijing time)
-    var dailyMap = {};
+    // Filter out recharges and sort by time
+    var valid = [];
     for (var i = 0; i < diffs.length; i++) {
-      var d = diffs[i];
-      if (d.isRecharge) continue;
-      var bjEnd = this._toBeijingTime(d.endTime);
-      var key = bjEnd.getFullYear() + '-' + (bjEnd.getMonth() + 1) + '-' + bjEnd.getDate();
-      if (!dailyMap[key]) dailyMap[key] = 0;
-      dailyMap[key] += d.consumption;
+      if (!diffs[i].isRecharge) {
+        valid.push(diffs[i]);
+      }
     }
+    valid.sort(function (a, b) { return a.endTime - b.endTime; });
 
-    var dates = Object.keys(dailyMap).sort();
-    var values = dates.map(function (k) { return dailyMap[k]; });
-
-    if (values.length < 7) {
+    if (valid.length < 3) {
       return { slope: 0, isAccelerating: false, data: [] };
     }
 
-    // Compute 7-day sliding average
+    // Use consumption values directly, compute sliding average
+    var windowSize = Math.min(3, valid.length);
     var slidingAvg = [];
-    for (var i = 6; i < values.length; i++) {
+    for (var i = windowSize - 1; i < valid.length; i++) {
       var sum = 0;
-      for (var j = i - 6; j <= i; j++) {
-        sum += values[j];
+      for (var j = i - windowSize + 1; j <= i; j++) {
+        sum += valid[j].consumption;
       }
-      slidingAvg.push({ date: dates[i], avg7: sum / 7 });
+      var bj = this._toBeijingTime(valid[i].endTime);
+      var dateStr = bj.getFullYear() + '-' + String(bj.getMonth() + 1).padStart(2, '0') + '-' + String(bj.getDate()).padStart(2, '0');
+      var timeStr = String(bj.getHours()).padStart(2, '0') + ':' + String(bj.getMinutes()).padStart(2, '0');
+      slidingAvg.push({ date: dateStr + ' ' + timeStr, avg: sum / windowSize });
     }
 
     if (slidingAvg.length < 2) {
       return { slope: 0, isAccelerating: false, data: slidingAvg };
     }
 
-    // Compute slope of last 7 points using linear regression
-    var last7 = slidingAvg.slice(-7);
-    if (last7.length < 2) {
-      return { slope: 0, isAccelerating: false, data: slidingAvg };
-    }
-
-    var n = last7.length;
+    // Compute slope of all points using linear regression
+    var n = slidingAvg.length;
     var xSum = 0, ySum = 0, xySum = 0, x2Sum = 0;
     for (var i = 0; i < n; i++) {
       xSum += i;
-      ySum += last7[i].avg7;
-      xySum += i * last7[i].avg7;
+      ySum += slidingAvg[i].avg;
+      xySum += i * slidingAvg[i].avg;
       x2Sum += i * i;
     }
     var slope = (n * xySum - xSum * ySum) / (n * x2Sum - xSum * xSum);
