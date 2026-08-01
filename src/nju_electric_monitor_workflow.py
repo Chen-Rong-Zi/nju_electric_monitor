@@ -2091,12 +2091,15 @@ class NJUElectricMonitor:
                 return False
             # 测试模式：已通过统一认证并进入电费页面
             self.save_page_snapshot("06_login_success_electric_page")
-            
-            # 8. 点击充值按钮
+
+            # 8. 选择房间（根据配置）
+            self.select_room(self.room_config)
+
+            # 9. 点击充值按钮
             if not self.click_recharge_button():
                 self.logger.warning("点击充值按钮失败，尝试直接提取数据")
-            
-            # 9. 提取剩余电量
+
+            # 10. 提取剩余电量
             remaining_electricity = self.extract_remaining_electricity()
 
             # 如果未能成功提取电量，视为本次流程失败（可能是验证码/登录异常导致未进入目标页面）
@@ -2104,10 +2107,10 @@ class NJUElectricMonitor:
                 self.logger.error("提取剩余电量失败，认为本次监控流程未成功，将交由上层重试")
                 return False
 
-            # 10. 保存数据
+            # 11. 保存数据
             self.save_data(remaining_electricity)
 
-            # 11. 根据电量阈值发送邮件提醒（如已配置）
+            # 12. 根据电量阈值发送邮件提醒（如已配置）
             self.send_email_alert_if_needed(remaining_electricity)
             
             self.logger.info("监控流程完成")
