@@ -1421,7 +1421,7 @@ class NJUElectricMonitor:
 
         # 1. 等待房间列表加载
         try:
-            WebDriverWait(self.driver, 15).until(
+            WebDriverWait(self.driver, 30).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".cent-list"))
             )
             self.logger.info("房间列表已加载")
@@ -1494,46 +1494,50 @@ class NJUElectricMonitor:
             return False
 
     def click_recharge_button(self):
-        """点击'去充值'按钮"""
-        try:
-            self.logger.info("查找'去充值'按钮...")
-            recharge_button = None
-
-            # 1) 优先按文本内容查找包含“去充值”的可点击元素
+        """点击'去充值'按钮（带重试，最多 3 次）"""
+        for attempt in range(1, 4):
             try:
-                candidates = self.driver.find_elements(By.XPATH, "//*[contains(text(),'去充值')]")
-                visible = [el for el in candidates if el.is_displayed() and el.is_enabled()]
-                if visible:
-                    recharge_button = visible[0]
-                    self.logger.info("通过文本包含 '去充值' 找到充值按钮")
-            except Exception as e:
-                self.logger.warning(f"通过文本查找'去充值'按钮出错: {e}")
+                self.logger.info(f"查找'去充值'按钮（第 {attempt} 次）...")
+                recharge_button = None
 
-            # 2) 若未找到，则回退到原先的 CSS 选择器 div.footer
-            if recharge_button is None:
+                # 1) 优先按文本内容查找包含“去充值”的可点击元素
                 try:
-                    btn = self.driver.find_element(By.CSS_SELECTOR, "div.footer")
-                    if btn.is_displayed() and btn.is_enabled():
-                        recharge_button = btn
-                        self.logger.info("通过 CSS 选择器 div.footer 找到充值按钮")
-                except NoSuchElementException:
-                    self.logger.warning("通过 CSS 选择器未找到'去充值'按钮 div.footer")
+                    candidates = self.driver.find_elements(By.XPATH, "//*[contains(text(),'去充值')]")
+                    visible = [el for el in candidates if el.is_displayed() and el.is_enabled()]
+                    if visible:
+                        recharge_button = visible[0]
+                        self.logger.info("通过文本包含 '去充值' 找到充值按钮")
+                except Exception as e:
+                    self.logger.warning(f"通过文本查找'去充值'按钮出错: {e}")
 
-            if recharge_button is None:
-                self.logger.error("未找到可点击的'去充值'按钮")
-                return False
+                # 2) 若未找到，则回退到原先的 CSS 选择器 div.footer
+                if recharge_button is None:
+                    try:
+                        btn = self.driver.find_element(By.CSS_SELECTOR, "div.footer")
+                        if btn.is_displayed() and btn.is_enabled():
+                            recharge_button = btn
+                            self.logger.info("通过 CSS 选择器 div.footer 找到充值按钮")
+                    except NoSuchElementException:
+                        self.logger.warning("通过 CSS 选择器未找到'去充值'按钮 div.footer")
 
-            try:
-                recharge_button.click()
-                self.logger.info("已点击充值按钮")
-                time.sleep(3)
-                return True
+                if recharge_button is not None:
+                    recharge_button.click()
+                    self.logger.info("已点击充值按钮")
+                    time.sleep(3)
+                    return True
+
+                if attempt < 3:
+                    self.logger.warning(f"充值按钮第 {attempt} 次未找到，等待 5s 后重试")
+                    time.sleep(5)
+                    continue
             except Exception as e:
-                self.logger.error(f"点击充值按钮时发生异常: {e}")
-                return False
-            
-        except Exception as e:
-            self.logger.error(f"点击充值按钮时出错: {e}")
+                if attempt < 3:
+                    self.logger.warning(f"充值按钮点击第 {attempt} 次失败: {e}，等待 5s 后重试")
+                    time.sleep(5)
+                    continue
+                # 第 3 次失败不 raise，fall through 到 return False
+
+            self.logger.error("未找到可点击的'去充值'按钮（重试耗尽）")
             return False
     
     def extract_remaining_electricity(self):
@@ -2093,19 +2097,32 @@ class NJUElectricMonitor:
             # 测试模式：已通过统一认证并进入电费页面
             self.save_page_snapshot("06_login_success_electric_page")
 
-            # 8. 选择房间（根据配置）
-            self.select_room(self.room_config)
+            # 8. 选择房间（根据配置），带重试
+            for room_attempt in range(1, 4):
+                if self.select_room(self.room_config):
+                    break
+                if room_attempt < 3:
+                    self.logger.warning(f"房间选择第 {room_attempt} 次失败，等待 5s 后重试")
+                    time.sleep(5)
+            else:
+                self.logger.warning("房间选择重试耗尽，继续执行后续流程")
 
             # 9. 点击充值按钮
             if not self.click_recharge_button():
                 self.logger.warning("点击充值按钮失败，尝试直接提取数据")
 
-            # 10. 提取剩余电量
-            remaining_electricity = self.extract_remaining_electricity()
+            # 10. 提取剩余电量（带重试）
+            remaining_electricity = None
+            for extract_attempt in range(1, 4):
+                remaining_electricity = self.extract_remaining_electricity()
+                if remaining_electricity is not None:
+                    break
+                if extract_attempt < 3:
+                    self.logger.warning(f"电量提取第 {extract_attempt} 次失败，等待 5s 后重试")
+                    time.sleep(5)
 
-            # 如果未能成功提取电量，视为本次流程失败（可能是验证码/登录异常导致未进入目标页面）
             if remaining_electricity is None:
-                self.logger.error("提取剩余电量失败，认为本次监控流程未成功，将交由上层重试")
+                self.logger.error("提取剩余电量失败（重试耗尽），认为本次监控流程未成功")
                 return False
 
             # 11. 保存数据
