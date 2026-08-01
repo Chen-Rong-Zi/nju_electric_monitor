@@ -364,12 +364,8 @@ var Analytics = {
     var weekday = [];
     var weekend = [];
     for (var h = 0; h < 24; h++) {
-      if (weekdayMap[h] !== undefined) {
-        weekday.push({ hour: h, avg: weekdayMap[h] / weekdayCount[h] });
-      }
-      if (weekendMap[h] !== undefined) {
-        weekend.push({ hour: h, avg: weekendMap[h] / weekendCount[h] });
-      }
+      weekday.push({ hour: h, avg: weekdayMap[h] !== undefined ? weekdayMap[h] / weekdayCount[h] : 0 });
+      weekend.push({ hour: h, avg: weekendMap[h] !== undefined ? weekendMap[h] / weekendCount[h] : 0 });
     }
 
     return { weekday: weekday, weekend: weekend };
