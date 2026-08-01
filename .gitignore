@@ -19,3 +19,16 @@ __pycache__/
 # 测试数据
 data\test_snapshots_auto\*
 tests/
+
+# Node.js
+node_modules/
+
+# Claude Code 工作区
+.claude/
+
+# Playwright MCP 缓存
+.playwright-mcp/
+
+# OCR 模型文件
+models/
+ocr_models/
