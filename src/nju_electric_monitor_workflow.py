@@ -1468,13 +1468,13 @@ class NJUElectricMonitor:
         try:
             target_div = room_divs[matched_index]
 
-            # 4a. 点击 radio button
+            # 4a. 点击 radio 对应的 label（radio 被 magic-radio CSS 隐藏，label 才是可见的可点击元素）
             try:
-                radio = target_div.find_element(By.CSS_SELECTOR, "input[type='radio']")
-                radio.click()
-                self.logger.info(f"已点击房间 {matched_index} 的 radio button")
+                label = target_div.find_element(By.CSS_SELECTOR, "label")
+                label.click()
+                self.logger.info(f"已点击房间 {matched_index} 的 label")
             except Exception as e:
-                self.logger.warning(f"点击 radio button 失败: {e}")
+                self.logger.warning(f"点击 label 失败: {e}")
 
             # 4b. 通过 JavaScript 同步 Vue 内部状态
             try:
