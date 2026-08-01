@@ -33,7 +33,7 @@
 
 **当前行为：** 调用一次 `subprocess.run([sys.executable, workflow_path])`，非零退出码即 raise。
 
-**改为：** 外层循环包装，最多重试 2 次（共 3 次尝试），每次重试间隔 30s。
+**改为：** 外层循环包装，最多重试 3 次（共 3 次尝试），每次重试间隔 30s。保留原始退出码到日志。
 
 ```python
 MAX_RETRIES = 3
@@ -55,9 +55,9 @@ for attempt in range(1, MAX_RETRIES + 1):
         success = False
 
 if not success:
-    lf.write(f"所有 {MAX_RETRIES} 次尝试均失败\n")
+    lf.write(f"所有 {MAX_RETRIES} 次尝试均失败（最后退出码: {result.returncode}）\n")
     lf.flush()
-    raise SystemExit(1)
+    raise SystemExit(result.returncode)
 ```
 
 **注意：** 每次重试会重新启动整个 workflow，包括重新打开浏览器、重新登录，相当于一个全新的监控流程。这只在网络/教务系统短暂波动时有意义。如果连续 3 次都失败，说明问题不可恢复（如教务系统页面改版、凭据过期），不再重试。
@@ -68,7 +68,7 @@ if not success:
 
 **改为：**
 - WebDriverWait 超时从 15s 延长到 **30s**
-- 调用方（`run()` 方法中）对 `select_room()` 失败时，等待 5s 后重试，最多 2 次
+- 调用方（`run()` 方法中）对 `select_room()` 失败时，等待 5s 后重试，最多 3 次（最后失败不 sleep）
 
 **select_room 方法内改动（第 1424 行）：**
 ```python
@@ -80,11 +80,12 @@ WebDriverWait(self.driver, 30).until(
 **run() 方法中调用处改动（第 2097 行附近）：**
 ```python
 # 8. 选择房间（根据配置），带重试
-for room_attempt in range(1, 3):
+for room_attempt in range(1, 4):
     if self.select_room(self.room_config):
         break
-    self.logger.warning(f"房间选择第 {room_attempt} 次失败，等待 5s 后重试")
-    time.sleep(5)
+    if room_attempt < 3:
+        self.logger.warning(f"房间选择第 {room_attempt} 次失败，等待 5s 后重试")
+        time.sleep(5)
 else:
     self.logger.warning("房间选择重试耗尽，继续执行后续流程")
 ```
@@ -93,11 +94,11 @@ else:
 
 **当前行为：** 找不到按钮 → 返回 False。
 
-**改为：** 内部增加重试逻辑，最多 2 次，每次重试前等待 5s。
+**改为：** 内部增加重试逻辑，最多 3 次，每次重试前等待 5s（最后失败不 sleep，不 raise）。
 
 ```python
 def click_recharge_button(self):
-    for attempt in range(1, 3):
+    for attempt in range(1, 4):
         try:
             # ... 现有查找逻辑 ...
             if recharge_button is not None:
@@ -105,16 +106,16 @@ def click_recharge_button(self):
                 time.sleep(3)
                 return True
             
-            if attempt == 1:
+            if attempt < 3:
                 self.logger.warning(f"充值按钮第 {attempt} 次未找到，等待 5s 后重试")
                 time.sleep(5)
                 continue
         except Exception as e:
-            if attempt == 1:
+            if attempt < 3:
                 self.logger.warning(f"充值按钮点击第 {attempt} 次失败: {e}，等待 5s 后重试")
                 time.sleep(5)
                 continue
-            raise
+            # 第 3 次失败不 raise，直接 fall through 到 return False
     
     self.logger.error("充值按钮未找到（重试耗尽）")
     return False
@@ -124,17 +125,18 @@ def click_recharge_button(self):
 
 **当前行为：** `extract_remaining_electricity()` 返回 None → 记录错误 → 返回 False。
 
-**改为：** 在 `run()` 方法中，对提取结果做重试循环，最多 2 次，每次重试前等待 5s。
+**改为：** 在 `run()` 方法中，对提取结果做重试循环，最多 3 次，每次重试前等待 5s（最后失败不 sleep）。
 
 ```python
 # 10. 提取剩余电量（带重试）
 remaining_electricity = None
-for extract_attempt in range(1, 3):
+for extract_attempt in range(1, 4):
     remaining_electricity = self.extract_remaining_electricity()
     if remaining_electricity is not None:
         break
-    self.logger.warning(f"电量提取第 {extract_attempt} 次失败，等待 5s 后重试")
-    time.sleep(5)
+    if extract_attempt < 3:
+        self.logger.warning(f"电量提取第 {extract_attempt} 次失败，等待 5s 后重试")
+        time.sleep(5)
 
 if remaining_electricity is None:
     self.logger.error("提取剩余电量失败（重试耗尽），认为本次监控流程未成功")
@@ -146,11 +148,11 @@ if remaining_electricity is None:
 | 层级 | 重试对象 | 最多尝试 | 间隔 | 目的 |
 |------|---------|---------|------|------|
 | 1（最外层） | 整个 workflow | 3 次 | 30s | 应对网络/教务系统整体波动 |
-| 2 | 房间选择 | 2 次 | 5s | 应对页面加载延迟 |
-| 3 | 充值按钮点击 | 2 次 | 5s | 应对页面渲染延迟 |
-| 4 | 电量提取 | 2 次 | 5s | 应对数据加载延迟 |
+| 2 | 房间选择 | 3 次 | 5s | 应对页面加载延迟 |
+| 3 | 充值按钮点击 | 3 次 | 5s | 应对页面渲染延迟 |
+| 4 | 电量提取 | 3 次 | 5s | 应对数据加载延迟 |
 
-**总最坏耗时：** 单次 workflow 约 1-2 分钟，重试 3 次 + 2×30s ≈ 约 10 分钟上限。不会超过 GitHub Actions 的 6 小时超时限制。
+**总最坏耗时：** 单次 workflow 约 1-2 分钟，wrapper 重试 3 次 + 2×30s 间隔 ≈ 约 10 分钟上限。不会超过 GitHub Actions 的 6 小时超时限制。
 
 ## 不涉及
 
