@@ -2,7 +2,7 @@ name: Auto Monitor Schedule
 
 on:
   schedule:
-    - cron: "23 */3 * * *" # 每 3 小时运行一次（23 分避开整点拥挤）
+    - cron: "37 */3 * * *" # 每 3 小时运行一次（37 分避开整点拥挤）
   workflow_dispatch:
 
 permissions:
