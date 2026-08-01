@@ -24,6 +24,20 @@
 | 数据采集 | Python + Selenium（GitHub Actions 自动运行） |
 | 部署 | GitHub Pages |
 
+## 📈 自动采集图表
+
+> 以下图表由 GitHub Actions 自动采集数据并生成，每次运行自动更新。
+
+### 电量变化趋势
+
+![电量变化曲线](data/electricity_trend.png)
+
+### 最近 20 次电量变化
+
+![最近20次电量变化](data/recent_20_changes.png)
+
+---
+
 ## 📄 数据说明
 
 - **数据来源**：南京大学 epay 电费充值系统
