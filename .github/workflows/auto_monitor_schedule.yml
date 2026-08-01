@@ -2,7 +2,7 @@ name: Auto Monitor Schedule
 
 on:
   schedule:
-    - cron: "0 * * * *" # 每小时运行一次（UTC 时间，对应北京时间每小时）
+    - cron: "0 */3 * * *" # 每 3 小时运行一次（UTC 时间，对应北京时间 0/3/6/9/12/15/18/21 点）
   workflow_dispatch:
 
 permissions:
