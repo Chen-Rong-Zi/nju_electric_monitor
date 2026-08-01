@@ -1,0 +1,751 @@
+# 前端重构与 README 重写 实现计划
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** 使用 njupower.top 设计系统重构 `docs/index.html`，重写 `README.md` 为简洁版
+
+**Architecture:**
+- 单文件 `docs/index.html`：包含完整 HTML/CSS/JS，使用 njupower.top 的 CSS 变量系统和组件风格
+- 前端 JS 负责所有数据计算（统计/预测/高峰分析）和 Plotly 图表渲染
+- 数据来源：`data/electricity_data.json`（JSON Lines 格式），通过相对路径或 raw.githubusercontent.com 获取
+- `README.md`：精简为项目简介 + GitHub Pages 链接
+
+**Tech Stack:** HTML5, CSS3 (oklch), JavaScript (ES6+), Plotly.js (CDN)
+
+---
+
+### Task 1: 重写 README.md
+
+**Files:**
+- Modify: `README.md`
+
+- [ ] **Step 1: 写入新 README.md**
+
+```markdown
+# ⚡ 南京大学电费监控面板
+
+> 自动追踪宿舍电量消耗，可视化用电趋势，智能预测余额可用天数
+
+🌐 **在线体验**: [https://chen-rong-zi.github.io/nju_electric_monitor/](https://chen-rong-zi.github.io/nju_electric_monitor/)
+
+---
+
+## 📊 功能特性
+
+- **实时电量监控** — 自动采集宿舍剩余电量数据
+- **用电趋势分析** — 电量变化曲线，支持 7天/30天/90天/全部时间范围
+- **每日用电量** — 柱状图展示每日用电量分布
+- **智能预测** — 基于近 7 天用电习惯，预测余额何时用完
+- **用电高峰分析** — 识别高峰用电时段和高峰日
+- **数据明细** — 完整的电费数据表格，支持展开/折叠
+
+## 🛠 技术栈
+
+| 组件 | 技术 |
+|------|------|
+| 前端 | 纯 HTML/CSS/JS，无需后端 |
+| 图表 | Plotly.js（交互式图表） |
+| 数据采集 | Python + Selenium（GitHub Actions 自动运行） |
+| 部署 | GitHub Pages |
+
+## 📄 数据说明
+
+- **数据来源**：南京大学 epay 电费充值系统
+- **更新频率**：每日多次自动采集
+- **数据格式**：`data/electricity_data.json`（JSON Lines）
+- **数据安全**：仅采集电量余额数据，不涉及个人身份信息
+
+## 📂 项目结构
+
+```
+nju_electric_monitor/
+├── docs/index.html          # GitHub Pages 静态面板
+├── src/                     # Python 采集脚本
+├── data/                    # 电量数据
+├── .github/workflows/       # 自动采集工作流
+└── README.md                # 本文件
+```
+
+## 📜 许可证
+
+MIT License
+
+---
+
+<p align="center">
+  ⚡ 南京大学电费监控 · 开源项目
+</p>
+```
+
+- [ ] **Step 2: 提交 README 重写**
+
+```bash
+git add README.md
+git commit -m "docs: 重写 README，精简为项目简介 + GitHub Pages 链接
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
+
+---
+
+### Task 2: 重构 docs/index.html（njupower.top 风格）
+
+**Files:**
+- Modify: `docs/index.html`
+
+**文件职责：** 单文件静态页面，包含完整 HTML/CSS/JS，实现 njupower.top 风格的电费监控面板
+
+- [ ] **Step 1: 写入新的 docs/index.html**
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电费监控 · 南京大学</title>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<style>
+:root {
+  --bg: oklch(97% 0.003 250);
+  --surface: oklch(100% 0 0);
+  --fg: oklch(20% 0.015 250);
+  --muted: oklch(50% 0.012 250);
+  --border: oklch(90% 0.006 250);
+  --accent: oklch(55% 0.15 160);
+  --warning: oklch(65% 0.18 50);
+  --danger: oklch(55% 0.20 25);
+  --success: oklch(60% 0.14 145);
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, 'JetBrains Mono', Menlo, monospace;
+  --radius: 12px;
+  --radius-lg: 20px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--fg);
+  font-family:var(--font-body);font-size:15px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+/* 导航 */
+.topnav{
+  position:sticky;top:0;z-index:100;
+  background:color-mix(in oklch,var(--bg) 85%,transparent);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+}
+.topnav-inner{
+  max-width:1200px;margin:0 auto;padding:16px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.logo{font-family:var(--font-display);font-size:18px;font-weight:600;letter-spacing:-0.02em;text-decoration:none;color:var(--fg);}
+.nav-links{display:flex;gap:24px;align-items:center}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;transition:color .15s}
+.nav-links a:hover,.nav-links a.active{color:var(--fg)}
+/* 主内容 */
+.main{max-width:1200px;margin:0 auto;padding:32px 24px}
+/* Hero */
+.hero{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:32px;margin-bottom:24px;box-shadow:var(--shadow);
+  text-align:center;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 14px;background:color-mix(in oklch,var(--accent) 12%,transparent);
+  color:var(--accent);border-radius:999px;font-size:13px;font-family:var(--font-mono);margin-bottom:16px;
+}
+.hero-value{
+  font-family:var(--font-display);font-size:clamp(40px,8vw,64px);font-weight:700;
+  letter-spacing:-0.03em;color:var(--accent);margin:0 0 8px;
+}
+.hero-unit{font-size:clamp(18px,3vw,28px);font-weight:400;color:var(--muted);}
+.hero-meta{color:var(--muted);font-size:13px;font-family:var(--font-mono);}
+/* 统计卡片 */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+@media(max-width:800px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.stats-grid{grid-template-columns:1fr}}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);
+}
+.stat-label{color:var(--muted);font-size:12px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.stat-value{font-family:var(--font-display);font-size:clamp(20px,3vw,28px);font-weight:600;letter-spacing:-0.02em}
+.stat-value.accent{color:var(--accent)}
+.stat-value.warning{color:var(--warning)}
+.stat-value.danger{color:var(--danger)}
+/* 预测卡片 */
+.prediction-card{
+  background:linear-gradient(135deg,color-mix(in oklch,var(--accent) 8%,transparent),var(--surface));
+  border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;
+  margin-bottom:24px;box-shadow:var(--shadow);
+}
+.prediction-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px;background:color-mix(in oklch,var(--accent) 15%,transparent)}
+.prediction-title{font-family:var(--font-display);font-size:16px;font-weight:600;margin:0 0 8px}
+.prediction-text{color:var(--fg);font-size:15px;margin:0}
+.prediction-highlight{font-family:var(--font-mono);font-weight:600;color:var(--accent);font-size:18px}
+.prediction-meta{color:var(--muted);font-size:13px;margin-top:8px}
+/* 图表区域 */
+.chart-section{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:24px;margin-bottom:24px;box-shadow:var(--shadow);
+}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.section-title{font-family:var(--font-display);font-size:18px;font-weight:600;letter-spacing:-0.01em;margin:0}
+.chart-controls{display:flex;gap:8px;flex-wrap:wrap}
+.btn-chart{
+  padding:6px 14px;border:1px solid var(--border);border-radius:8px;
+  background:transparent;color:var(--muted);font-family:var(--font-body);font-size:13px;font-weight:500;
+  cursor:pointer;transition:all .15s;
+}
+.btn-chart:hover{background:var(--fg);color:var(--surface);border-color:var(--fg)}
+.btn-chart.active{background:var(--fg);color:var(--surface);border-color:var(--fg)}
+.chart-container{position:relative;height:320px;width:100%}
+/* 高峰分析 */
+.peak-section{
+  display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;
+}
+@media(max-width:800px){.peak-section{grid-template-columns:1fr}}
+.peak-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:24px;box-shadow:var(--shadow);
+}
+.peak-card .chart-container{height:200px}
+.peak-label{color:var(--muted);font-size:12px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.peak-value{font-family:var(--font-display);font-size:clamp(20px,3vw,24px);font-weight:600;margin-bottom:4px;color:var(--warning)}
+.peak-desc{color:var(--muted);font-size:13px}
+/* 数据表格 */
+.table-section{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:24px;margin-bottom:24px;box-shadow:var(--shadow);
+}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+th{font-family:var(--font-mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:var(--bg)}
+tr:last-child td{border-bottom:none}
+tr.highlight{background:color-mix(in oklch,var(--warning) 8%,transparent)}
+.faint-text{color:var(--muted);font-size:13px}
+.hidden-rows{display:none}
+.show-more{cursor:pointer;color:var(--accent);font-size:14px;font-weight:500;display:inline-block;margin-top:12px;text-decoration:none}
+.show-more:hover{text-decoration:underline}
+/* 页脚 */
+.pagefoot{max-width:1200px;margin:0 auto;padding:40px 24px;text-align:center;color:var(--muted);font-size:13px;border-top:1px solid var(--border)}
+.pagefoot a{color:var(--muted);text-decoration:none}
+.pagefoot a:hover{color:var(--fg)}
+/* 状态 */
+.loading{text-align:center;color:var(--muted);padding:80px 0;font-size:16px}
+.error-msg{text-align:center;color:var(--danger);padding:80px 0;font-size:15px}
+.error-msg .btn-chart{display:inline-flex;margin-top:16px}
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="." class="logo">⚡ 电费监控</a>
+    <div class="nav-links">
+      <a href="." class="active">电费监控</a>
+      <a href="https://njupower.top" target="_blank">njupower.top</a>
+      <a href="https://github.com/Chen-Rong-Zi/nju_electric_monitor" target="_blank">GitHub</a>
+      <a href="https://chen-rong-zi.github.io/nju_electric_monitor/" target="_blank">关于</a>
+    </div>
+  </div>
+</nav>
+<main class="main">
+  <div id="loading" class="loading">⏳ 加载中...</div>
+  <div id="content" style="display:none">
+
+    <!-- Hero -->
+    <div class="hero" id="hero">
+      <div class="hero-badge"><span>●</span><span>实时监控</span></div>
+      <div class="hero-value" id="current-balance">-- <span class="hero-unit">度</span></div>
+      <div class="hero-meta" id="last-update">最后更新: --</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card"><div class="stat-label">当前电量</div><div class="stat-value accent" id="stat-current">--</div></div>
+      <div class="stat-card"><div class="stat-label">今日用电</div><div class="stat-value" id="stat-today">--</div></div>
+      <div class="stat-card"><div class="stat-label">本周用电</div><div class="stat-value" id="stat-week">--</div></div>
+      <div class="stat-card"><div class="stat-label">日均用电</div><div class="stat-value" id="stat-daily">--</div></div>
+    </div>
+
+    <!-- Prediction -->
+    <div class="prediction-card" id="prediction-card">
+      <div class="prediction-icon">🔮</div>
+      <div class="prediction-title">用电预测</div>
+      <div class="prediction-text" id="prediction-text">按当前用电速度，预计 <span class="prediction-highlight">--</span> 左右用完</div>
+      <div class="prediction-meta" id="prediction-meta">基于近 7 天用电数据预测</div>
+    </div>
+
+    <!-- Balance Chart -->
+    <div class="chart-section" id="chart-balance-section">
+      <div class="section-header">
+        <div class="section-title">📈 电量变化曲线</div>
+        <div class="chart-controls" id="controls-balance">
+          <button class="btn-chart active" data-range="7">7天</button>
+          <button class="btn-chart" data-range="30">30天</button>
+          <button class="btn-chart" data-range="90">90天</button>
+          <button class="btn-chart" data-range="all">全部</button>
+        </div>
+      </div>
+      <div class="chart-container" id="chart-balance"></div>
+    </div>
+
+    <!-- Daily Usage Chart -->
+    <div class="chart-section" id="chart-usage-section">
+      <div class="section-header">
+        <div class="section-title">📊 每日用电量</div>
+        <div class="chart-controls" id="controls-usage">
+          <button class="btn-chart active" data-range="7">7天</button>
+          <button class="btn-chart" data-range="30">30天</button>
+          <button class="btn-chart" data-range="90">90天</button>
+          <button class="btn-chart" data-range="all">全部</button>
+        </div>
+      </div>
+      <div class="chart-container" id="chart-usage"></div>
+    </div>
+
+    <!-- Peak Analysis -->
+    <div class="peak-section" id="peak-section">
+      <div class="peak-card">
+        <div class="peak-label">⏰ 高峰时段</div>
+        <div class="peak-value" id="peak-hour">--</div>
+        <div class="peak-desc" id="peak-hour-desc">--</div>
+      </div>
+      <div class="peak-card">
+        <div class="peak-label">📅 高峰日</div>
+        <div class="peak-value" id="peak-day">--</div>
+        <div class="peak-desc" id="peak-day-desc">--</div>
+      </div>
+      <div class="peak-card" style="grid-column:1/-1">
+        <div class="section-title" style="font-size:15px;margin-bottom:12px">🕐 24小时用电分布</div>
+        <div class="chart-container" id="chart-distribution"></div>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-section" id="table-section">
+      <div class="section-header">
+        <div class="section-title">📋 电费数据明细</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>日期</th><th>时刻</th><th>剩余电量</th><th>用电量</th><th>单位</th></tr></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+      <a class="show-more" id="toggle-btn" onclick="toggleRows()">展开全部</a>
+    </div>
+
+  </div>
+  <div id="error" class="error-msg" style="display:none"></div>
+</main>
+<footer class="pagefoot">
+  <p>⚡ 电费监控 · 南京大学</p>
+  <p style="margin-top:8px">
+    <a href="https://njupower.top" target="_blank">njupower.top</a>
+    ·
+    <a href="https://github.com/Chen-Rong-Zi/nju_electric_monitor" target="_blank">GitHub</a>
+    ·
+    <a href="https://chen-rong-zi.github.io/nju_electric_monitor/" target="_blank">GitHub Pages</a>
+  </p>
+</footer>
+
+<script>
+// ====== 配置 ======
+const DATA_URL = window.location.hostname.includes('github.io')
+  ? 'https://raw.githubusercontent.com/Chen-Rong-Zi/nju_electric_monitor/main/data/electricity_data.json'
+  : 'data/electricity_data.json';
+
+// ====== 数据加载 ======
+async function fetchData() {
+  const resp = await fetch(DATA_URL);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  const text = await resp.text();
+  const lines = text.trim().split('\n').filter(l => l.trim().startsWith('{'));
+  if (!lines.length) return [];
+  return lines.map(l => JSON.parse(l));
+}
+
+function toBeijingTime(utcDate) {
+  // 数据中的时间戳是 UTC，转换为北京时间 (UTC+8)
+  const bj = new Date(utcDate.getTime() + 8 * 3600000);
+  return bj;
+}
+
+function processData(raw) {
+  return raw.map(d => {
+    const t = new Date(d.timestamp || d.time);
+    return { time: t, bj: toBeijingTime(t), num: parseFloat(d.remaining_electricity || d.num), unit: d.unit || '度' };
+  }).filter(d => !isNaN(d.num) && !isNaN(d.time.getTime()))
+    .sort((a, b) => a.time - b.time);
+}
+
+// ====== 计算差值（过滤充值） ======
+function calcDiffs(data) {
+  const diffs = [];
+  for (let i = 1; i < data.length; i++) {
+    const diff = data[i-1].num - data[i].num;
+    if (diff > 0) { // 正值为消耗，负值为充值（跳过）
+      diffs.push({
+        startTime: data[i-1].bj,
+        endTime: data[i].bj,
+        consumption: diff,
+        startNum: data[i-1].num,
+        endNum: data[i].num
+      });
+    }
+  }
+  return diffs;
+}
+
+// ====== 时间范围过滤 ======
+function filterByRange(data, range) {
+  if (range === 'all') return data;
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - range * 86400000);
+  return data.filter(d => d.bj >= cutoff);
+}
+
+// ====== 统计计算 ======
+function computeStats(data, diffs) {
+  const now = new Date();
+  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const weekStart = new Date(todayStart);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // 周日开始
+
+  // 北京时间 today
+  const bjNow = new Date(now.getTime() + 8 * 3600000);
+  const bjToday = new Date(Date.UTC(bjNow.getUTCFullYear(), bjNow.getUTCMonth(), bjNow.getUTCDate()));
+
+  // 当前电量
+  const current = data.length > 0 ? data[data.length - 1].num : 0;
+
+  // 今日用电：当天最早和最晚记录差值
+  const todayData = data.filter(d => d.bj >= bjToday);
+  const todayDiff = todayData.length >= 2 ? todayData[0].num - todayData[todayData.length-1].num : 0;
+
+  // 本周用电：本周最早和最晚记录差值
+  const weekData = data.filter(d => d.bj >= bjToday);
+  const weekDiff = weekData.length >= 2 ? weekData[0].num - weekData[weekData.length-1].num : 0;
+
+  // 日均用电：总消耗 / 天数
+  const totalConsumption = diffs.reduce((s, d) => s + d.consumption, 0);
+  const days = data.length > 0 ? (data[data.length-1].bj - data[0].bj) / 86400000 : 1;
+  const dailyAvg = days > 0 ? totalConsumption / Math.max(days, 1) : 0;
+
+  return { current: Math.round(current * 100) / 100, today: Math.round(todayDiff * 100) / 100, week: Math.round(weekDiff * 100) / 100, daily: Math.round(dailyAvg * 100) / 100, totalConsumption: Math.round(totalConsumption * 100) / 100, days: Math.round(days) };
+}
+
+// ====== 预测 ======
+function computePrediction(data, diffs) {
+  // 近 7 天日均用电量
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - 7 * 86400000);
+  const recentDiffs = diffs.filter(d => d.endTime >= cutoff);
+  const recentConsumption = recentDiffs.reduce((s, d) => s + d.consumption, 0);
+  const recentDays = recentDiffs.length > 0 ? (recentDiffs[recentDiffs.length-1].endTime - recentDiffs[0].startTime) / 86400000 : 7;
+  const recentDaily = recentDays > 0 ? recentConsumption / Math.max(recentDays, 1) : 0;
+
+  if (recentDaily <= 0 || data.length === 0) return null;
+
+  const current = data[data.length-1].num;
+  const remainingDays = current / recentDaily;
+  const lastTime = data[data.length-1].bj;
+  const predictedEnd = new Date(lastTime.getTime() + remainingDays * 86400000);
+
+  const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+  const dateStr = predictedEnd.getFullYear() + '-' +
+    String(predictedEnd.getMonth()+1).padStart(2,'0') + '-' +
+    String(predictedEnd.getDate()).padStart(2,'0');
+  const dayStr = weekdays[predictedEnd.getDay()];
+  const timeStr = String(predictedEnd.getHours()).padStart(2,'0') + ':' + String(predictedEnd.getMinutes()).padStart(2,'0');
+
+  return { dateStr, dayStr, timeStr, remainingDays: Math.round(remainingDays * 10) / 10, dailyAvg: Math.round(recentDaily * 100) / 100 };
+}
+
+// ====== 高峰分析 ======
+function computePeak(diffs) {
+  if (diffs.length === 0) return null;
+
+  // 按小时分组
+  const hourly = {};
+  diffs.forEach(d => {
+    const h = d.endTime.getHours();
+    if (!hourly[h]) hourly[h] = { sum: 0, count: 0 };
+    hourly[h].sum += d.consumption;
+    hourly[h].count++;
+  });
+  const hourlyAvg = Object.entries(hourly).map(([h, v]) => ({ hour: parseInt(h), avg: v.sum / v.count })).sort((a, b) => a.hour - b.hour);
+
+  // 高峰时段：连续小时段
+  const sorted = [...hourlyAvg].sort((a, b) => b.avg - a.avg);
+  const peakHour = sorted[0];
+
+  // 按星期分组
+  const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+  const weekly = {};
+  diffs.forEach(d => {
+    const w = d.endTime.getDay();
+    if (!weekly[w]) weekly[w] = { sum: 0, count: 0 };
+    weekly[w].sum += d.consumption;
+    weekly[w].count++;
+  });
+  const weeklyAvg = Object.entries(weekly).map(([w, v]) => ({ day: parseInt(w), name: weekdays[parseInt(w)], avg: v.sum / v.count })).sort((a, b) => b.avg - a.avg);
+  const peakDay = weeklyAvg[0];
+
+  return { hourlyAvg, peakHour, weeklyAvg, peakDay };
+}
+
+// ====== 渲染 Hero ======
+function renderHero(current, lastTime) {
+  document.getElementById('current-balance').innerHTML = current + ' <span class="hero-unit">度</span>';
+  document.getElementById('last-update').textContent = '最后更新: ' + lastTime;
+}
+
+// ====== 渲染统计卡片 ======
+function renderStats(stats) {
+  document.getElementById('stat-current').textContent = stats.current + ' 度';
+  document.getElementById('stat-today').textContent = stats.today >= 0 ? stats.today + ' 度' : '--';
+  document.getElementById('stat-week').textContent = stats.week >= 0 ? stats.week + ' 度' : '--';
+  document.getElementById('stat-daily').textContent = stats.daily + ' 度';
+}
+
+// ====== 渲染预测 ======
+function renderPrediction(pred) {
+  if (!pred) {
+    document.getElementById('prediction-text').innerHTML = '数据不足，暂无法预测';
+    return;
+  }
+  document.getElementById('prediction-text').innerHTML =
+    '按当前用电速度，预计 <span class="prediction-highlight">' +
+    pred.dateStr + ' (' + pred.dayStr + ') ' + pred.timeStr + '</span> 左右用完';
+  document.getElementById('prediction-meta').textContent =
+    '基于近 7 天数据 · 日均用电 ' + pred.dailyAvg + ' 度 · 可维持 ' + pred.remainingDays + ' 天';
+}
+
+// ====== 渲染图表 ======
+function renderBalanceChart(data, range) {
+  const filtered = filterByRange(data, range);
+  if (filtered.length < 2) return;
+  const trace = {
+    x: filtered.map(d => d.bj),
+    y: filtered.map(d => d.num),
+    mode: 'lines+markers',
+    line: { color: 'oklch(55% 0.15 160)', width: 2.5 },
+    marker: { color: 'oklch(55% 0.15 160)', size: 5 },
+    hovertemplate: '%{x|%Y-%m-%d %H:%M}<br>%{y:.2f} 度<extra></extra>',
+    name: '剩余电量'
+  };
+  const layout = {
+    margin: { l: 50, r: 20, t: 10, b: 40 },
+    paper_bgcolor: 'transparent',
+    plot_bgcolor: 'transparent',
+    xaxis: { gridcolor: 'var(--border)', zeroline: false, tickfont: { size: 11 } },
+    yaxis: { gridcolor: 'var(--border)', zeroline: false, tickfont: { size: 11 }, title: '电量 (度)' },
+    hovermode: 'x unified',
+    showlegend: false
+  };
+  Plotly.react('chart-balance', [trace], layout, { displaylogo: false, responsive: true, modeBarButtonsToRemove: ['select2d','lasso2d','autoScale2d','resetScale2d','toggleSpikelines'] });
+}
+
+function renderUsageChart(diffs, range) {
+  const filtered = filterByRange(diffs.map(d => ({ bj: d.endTime, consumption: d.consumption })), range);
+  if (filtered.length < 2) return;
+  // 按日期聚合
+  const daily = {};
+  filtered.forEach(d => {
+    const key = d.bj.toISOString().slice(0, 10);
+    daily[key] = (daily[key] || 0) + d.consumption;
+  });
+  const dates = Object.keys(daily).sort();
+  const values = dates.map(d => Math.round(daily[d] * 100) / 100);
+  const trace = {
+    x: dates, y: values,
+    type: 'bar',
+    marker: { color: 'oklch(55% 0.15 160)', opacity: 0.8 },
+    hovertemplate: '%{x}<br>%{y:.2f} 度<extra></extra>',
+    name: '用电量'
+  };
+  const layout = {
+    margin: { l: 50, r: 20, t: 10, b: 40 },
+    paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+    xaxis: { gridcolor: 'var(--border)', zeroline: false, tickfont: { size: 11 } },
+    yaxis: { gridcolor: 'var(--border)', zeroline: false, tickfont: { size: 11 }, title: '用电量 (度)' },
+    hovermode: 'x unified', showlegend: false
+  };
+  Plotly.react('chart-usage', [trace], layout, { displaylogo: false, responsive: true, modeBarButtonsToRemove: ['select2d','lasso2d','autoScale2d','resetScale2d','toggleSpikelines'] });
+}
+
+function renderDistributionChart(hourlyAvg) {
+  if (!hourlyAvg || hourlyAvg.length === 0) return;
+  const hours = hourlyAvg.map(d => d.hour + ':00');
+  const values = hourlyAvg.map(d => Math.round(d.avg * 1000) / 1000);
+  const maxVal = Math.max(...values);
+  const colors = values.map(v => v === maxVal ? 'oklch(65% 0.18 50)' : 'oklch(55% 0.15 160)');
+  const trace = {
+    x: hours, y: values,
+    type: 'bar',
+    marker: { color: colors, opacity: 0.8 },
+    hovertemplate: '%{x}<br>%{y:.3f} 度<extra></extra>',
+    name: '平均用电量'
+  };
+  const layout = {
+    margin: { l: 50, r: 20, t: 10, b: 40 },
+    paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+    xaxis: { gridcolor: 'var(--border)', zeroline: false, tickfont: { size: 10 }, tickangle: -45 },
+    yaxis: { gridcolor: 'var(--border)', zeroline: false, tickfont: { size: 10 }, title: '平均用电量 (度)' },
+    hovermode: 'x unified', showlegend: false
+  };
+  Plotly.react('chart-distribution', [trace], layout, { displaylogo: false, responsive: true, modeBarButtonsToRemove: ['select2d','lasso2d','autoScale2d','resetScale2d','toggleSpikelines'] });
+}
+
+// ====== 渲染高峰分析 ======
+function renderPeak(peak) {
+  if (!peak) return;
+  document.getElementById('peak-hour').textContent = peak.peakHour.hour + ':00';
+  document.getElementById('peak-hour-desc').textContent = '该时段平均用电 ' + peak.peakHour.avg.toFixed(3) + ' 度';
+  document.getElementById('peak-day').textContent = peak.peakDay.name;
+  document.getElementById('peak-day-desc').textContent = '该天平均用电 ' + peak.peakDay.avg.toFixed(2) + ' 度';
+  renderDistributionChart(peak.hourlyAvg);
+}
+
+// ====== 渲染数据表格 ======
+function renderTable(data) {
+  const sorted = [...data].sort((a, b) => b.bj - a.bj);
+  const rows = sorted.map((d, i) => {
+    const diff = i < sorted.length - 1 ? Math.round((sorted[i].num - sorted[i+1].num) * 100) / 100 : null;
+    const dateStr = d.bj.toISOString().replace('T', ' ').slice(0, 19);
+    return { dateStr, num: d.num.toFixed(2), unit: d.unit, diff };
+  });
+  const visible = rows.slice(0, 20);
+  const hidden = rows.slice(20);
+  let html = '';
+  visible.forEach((r, i) => {
+    const hl = i % 20 === 0 ? ' class="highlight"' : '';
+    const faint = r.diff === null ? ' class="faint-text"' : '';
+    html += '<tr' + hl + '><td>' + r.dateStr.slice(0,10) + '</td><td>' + r.dateStr.slice(11,19) + '</td><td>' + r.num + '</td><td' + faint + '>' + (r.diff !== null ? r.diff.toFixed(2) : 'N/A') + '</td><td>' + r.unit + '</td></tr>';
+  });
+  hidden.forEach((r, i) => {
+    const hl = (visible.length + i) % 20 === 0 ? ' highlight' : '';
+    const faint = r.diff === null ? ' faint-text' : '';
+    html += '<tr class="hidden-rows' + hl + '"><td>' + r.dateStr.slice(0,10) + '</td><td>' + r.dateStr.slice(11,19) + '</td><td>' + r.num + '</td><td class="' + faint + '">' + (r.diff !== null ? r.diff.toFixed(2) : 'N/A') + '</td><td>' + r.unit + '</td></tr>';
+  });
+  document.getElementById('table-body').innerHTML = html;
+  document.getElementById('toggle-btn').style.display = hidden.length > 0 ? 'inline-block' : 'none';
+}
+
+function toggleRows() {
+  const rows = document.querySelectorAll('.hidden-rows');
+  rows.forEach(r => { r.style.display = r.style.display === 'table-row' ? 'none' : 'table-row'; });
+  const btn = document.getElementById('toggle-btn');
+  btn.textContent = btn.textContent === '展开全部' ? '折叠' : '展开全部';
+}
+
+// ====== 图表时间范围切换 ======
+function setupChartControls() {
+  document.querySelectorAll('.chart-controls').forEach(group => {
+    group.querySelectorAll('.btn-chart').forEach(btn => {
+      btn.addEventListener('click', function() {
+        group.querySelectorAll('.btn-chart').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        const range = this.dataset.range;
+        const id = group.id;
+        if (id === 'controls-balance') renderBalanceChart(window._data, range);
+        if (id === 'controls-usage') renderUsageChart(window._diffs, range);
+      });
+    });
+  });
+}
+
+// ====== 主流程 ======
+async function main() {
+  try {
+    const raw = await fetchData();
+    const data = processData(raw);
+    if (data.length === 0) throw new Error('暂无数据');
+
+    window._data = data;
+    const diffs = calcDiffs(data);
+    window._diffs = diffs;
+    const stats = computeStats(data, diffs);
+    const pred = computePrediction(data, diffs);
+    const peak = computePeak(diffs);
+
+    const lastTime = data[data.length-1].bj.toISOString().replace('T', ' ').slice(0, 19);
+
+    renderHero(stats.current, lastTime);
+    renderStats(stats);
+    renderPrediction(pred);
+    renderPeak(peak);
+    renderTable(data);
+
+    // 渲染图表
+    renderBalanceChart(data, '7');
+    renderUsageChart(diffs, '7');
+    setupChartControls();
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+  } catch (err) {
+    document.getElementById('loading').style.display = 'none';
+    const errDiv = document.getElementById('error');
+    errDiv.style.display = 'block';
+    errDiv.innerHTML = '❌ ' + err.message + '<br><br><button class="btn-chart" onclick="location.reload()">重试</button>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', main);
+</script>
+</body>
+</html>
+```
+
+- [ ] **Step 2: 验证文件**
+
+```bash
+ls -la docs/index.html
+wc -c docs/index.html
+# 应大于 10KB
+```
+
+- [ ] **Step 3: 提交重构**
+
+```bash
+git add docs/index.html
+git commit -m "feat: 使用 njupower.top 设计系统重构前端面板
+- 浅色主题，Apple 风格设计系统（oklch 色彩）
+- 毛玻璃导航栏，四个链接
+- 统计卡片（当前电量/今日/本周/日均）
+- 用电预测（基于 7 天数据）
+- 余额曲线 + 每日用量柱状图（时间范围切换）
+- 24 小时用电分布图 + 高峰分析
+- 充值过滤（跳过充值事件）
+- 北京时间时区处理
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
+
+---
+
+### Task 3: 最终验证
+
+- [ ] **Step 1: 检查文件状态**
+
+```bash
+git status
+```
+
+确认：
+- `README.md` — 已修改
+- `docs/index.html` — 已修改
+
+- [ ] **Step 2: 推送到 GitHub**
+
+```bash
+git push origin master
+```
