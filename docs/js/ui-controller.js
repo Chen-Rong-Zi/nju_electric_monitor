@@ -174,7 +174,7 @@
     const sorted = _data.slice().sort(function(a, b) { return b.bj - a.bj; });
     const rows = [];
     for (var i = 0; i < sorted.length; i++) {
-      var diff = i < sorted.length - 1 ? Math.round((sorted[i].num - sorted[i+1].num) * 100) / 100 : null;
+      var diff = i < sorted.length - 1 ? Math.round((sorted[i+1].num - sorted[i].num) * 100) / 100 : null;
       var bj = DataService.toBeijingTime(sorted[i].time);
       var dateStr = bj.getFullYear() + '-' + String(bj.getMonth()+1).padStart(2,'0') + '-' + String(bj.getDate()).padStart(2,'0');
       var timeStr = String(bj.getHours()).padStart(2,'0') + ':' + String(bj.getMinutes()).padStart(2,'0');

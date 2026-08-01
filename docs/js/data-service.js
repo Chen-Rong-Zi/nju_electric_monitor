@@ -44,7 +44,22 @@ const DataService = {
   processData: function (raw) {
     return raw
       .map(function (d) {
-        var time = new Date(d.timestamp);
+        // Parse timestamp as Beijing time via Date.UTC() for consistent behavior across browser timezones
+        // "2026-08-01T22:39:44.028312" → getUTCHours() = 22 (Beijing hour) in ALL browsers
+        var match = d.timestamp.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+        var time;
+        if (match) {
+          time = new Date(Date.UTC(
+            parseInt(match[1], 10),
+            parseInt(match[2], 10) - 1,
+            parseInt(match[3], 10),
+            parseInt(match[4], 10),
+            parseInt(match[5], 10),
+            parseInt(match[6], 10)
+          ));
+        } else {
+          time = new Date(d.timestamp);
+        }
         if (isNaN(time.getTime())) return null;
         return {
           time: time,
@@ -113,8 +128,17 @@ const DataService = {
     return data.filter(function (d) { return d.bj >= cutoff; });
   },
 
-  // Convert UTC Date to Beijing time (UTC+8)
+  // Convert UTC Date to Beijing time
+  // Raw timestamps are Beijing time, stored as UTC by JS Date parsing.
+  // Extract UTC components and create a local Date so getHours() returns the correct Beijing hour.
   toBeijingTime: function (date) {
-    return new Date(date.getTime() + 8 * 3600000);
+    return new Date(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+      date.getUTCHours(),
+      date.getUTCMinutes(),
+      date.getUTCSeconds()
+    );
   }
 };

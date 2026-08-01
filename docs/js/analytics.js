@@ -1,7 +1,16 @@
 var Analytics = {
-  // === Helper: Convert UTC to Beijing time ===
+  // === Helper: Convert UTC Date to Beijing time ===
+  // Raw timestamps are Beijing time, stored as UTC by JS Date parsing.
+  // Extract UTC components and create a local Date so getHours() etc. return the correct Beijing values.
   _toBeijingTime: function (date) {
-    return new Date(date.getTime() + 8 * 3600000);
+    return new Date(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+      date.getUTCHours(),
+      date.getUTCMinutes(),
+      date.getUTCSeconds()
+    );
   },
 
   // === Helper: Get start of today (Beijing time, based on last data point) ===
