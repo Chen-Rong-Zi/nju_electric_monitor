@@ -38,6 +38,8 @@
 ```python
 MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 30
+success = False
+exit_code = 1
 
 for attempt in range(1, MAX_RETRIES + 1):
     if attempt > 1:
@@ -45,19 +47,24 @@ for attempt in range(1, MAX_RETRIES + 1):
         lf.flush()
         time.sleep(RETRY_DELAY_SECONDS)
     
-    result = subprocess.run([sys.executable, workflow_path], stdout=lf, stderr=lf)
-    if result.returncode == 0:
-        success = True
-        break
-    else:
-        lf.write(f"Workflow script exited with code {result.returncode}\n")
+    try:
+        result = subprocess.run([sys.executable, workflow_path], stdout=lf, stderr=lf)
+        exit_code = result.returncode
+        if result.returncode == 0:
+            success = True
+            break
+        else:
+            lf.write(f"Workflow script exited with code {result.returncode}\n")
+            lf.flush()
+    except Exception as e:
+        lf.write(f"Workflow script raised exception: {e}\n")
+        traceback.print_exc(file=lf)
         lf.flush()
-        success = False
 
 if not success:
-    lf.write(f"所有 {MAX_RETRIES} 次尝试均失败（最后退出码: {result.returncode}）\n")
+    lf.write(f"所有 {MAX_RETRIES} 次尝试均失败（最后退出码: {exit_code}）\n")
     lf.flush()
-    raise SystemExit(result.returncode)
+    raise SystemExit(exit_code)
 ```
 
 **注意：** 每次重试会重新启动整个 workflow，包括重新打开浏览器、重新登录，相当于一个全新的监控流程。这只在网络/教务系统短暂波动时有意义。如果连续 3 次都失败，说明问题不可恢复（如教务系统页面改版、凭据过期），不再重试。
