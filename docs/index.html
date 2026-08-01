@@ -153,7 +153,10 @@
     </div>
 
     <script>
-        const DATA_URL = 'https://raw.githubusercontent.com/Chen-Rong-Zi/nju_electric_monitor/main/data/electricity_data.json';
+        // 自动检测环境：GitHub Pages 上用 raw.githubusercontent.com，本地用相对路径
+        const DATA_URL = window.location.hostname.includes('github.io')
+            ? 'https://raw.githubusercontent.com/Chen-Rong-Zi/nju_electric_monitor/main/data/electricity_data.json'
+            : '../data/electricity_data.json';
 
         async function fetchData() {
             const resp = await fetch(DATA_URL);
