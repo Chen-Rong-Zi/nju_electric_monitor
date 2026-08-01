@@ -1426,7 +1426,7 @@ class NJUElectricMonitor:
             )
             self.logger.info("房间列表已加载")
         except TimeoutException:
-            self.logger.warning("房间列表加载超时（15s），跳过房间选择")
+            self.logger.warning("房间列表加载超时（30s），跳过房间选择")
             return False
 
         # 2. 获取所有房间元素
