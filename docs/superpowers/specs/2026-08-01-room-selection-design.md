@@ -34,6 +34,18 @@ Vue 数据：
 
 默认选中逻辑：`v.checked = i == list.length - 1`（最后一个）。
 
+Vue 的 `check(i)` 方法（用于切换选中房间）：
+
+```javascript
+check(i) {
+  let list = this.list
+  list.forEach(v => { v.checked = false })
+  list[i].checked = true
+  this.index = i
+  this.list = list
+}
+```
+
 点击"去充值"按钮（`div.footer`）触发 Vue 的 `next()` 方法：
 
 ```javascript
@@ -66,18 +78,28 @@ next() {
 ```
 select_room(room_config):
   1. 如果 room_config 为空 → 直接返回（保持默认行为）
-  2. 等待房间列表加载完成（等待 .cent-list 元素出现）
+  2. 等待房间列表加载完成：
+     - WebDriverWait(self.driver, 15).until(
+         EC.presence_of_element_located((By.CSS_SELECTOR, ".cent-list"))
+       )
+     - 超时 → 记录警告，跳过选择
   3. 获取所有 .cent-list 元素
   4. 遍历，对每个元素：
      a. 获取 <span> 的文本，格式如 "仙林校区 4幢 4A211"
-     b. 按空格分割，取最后两部分作为 buildName 和 roomName
+     b. 按空格分割（Python str.split() 默认行为，自动处理连续空格），
+        取最后两部分作为 buildName 和 roomName
      c. 拼接为 "{buildName}/{roomName}" 与配置比较
      d. 匹配成功 → 记录当前索引 i
-  5. 如果找到匹配的房间：
+  5. 如果找到匹配的房间（i 为匹配索引）：
      a. 点击对应的 radio button（input[type="radio"]）
      b. 执行 JavaScript 同步 Vue 的内部状态：
-        document.querySelector('#app').__vue__.check(matchedIndex)
-     c. 记录日志 "已选择房间: 4幢/4A211"
+        self.driver.execute_script(
+          "document.querySelector('#app').__vue__.check(arguments[0])", i
+        )
+     c. 防御性检查：try/except 包裹 execute_script 调用
+        - 如果 __vue__ 为 undefined 或 check 不存在 → 记录警告，降级为仅点击 radio
+        - 异常不影响主流程
+     d. 记录日志 "已选择房间: 4幢/4A211"
   6. 如果未找到匹配 → 记录警告日志，保持默认选中
 ```
 
@@ -102,6 +124,8 @@ click_recharge_button()
 self.room_config = self.config.get("room", "")
 ```
 
+同时更新 `load_config()` 中的默认配置字典，新增 `"room": ""` 字段，确保配置文件生成时包含该字段。
+
 ### 涉及文件
 
 - 修改：`src/nju_electric_monitor_workflow.py`（新增 `select_room()` 方法，修改 `run()` 和 `__init__()`）
@@ -111,9 +135,12 @@ self.room_config = self.config.get("room", "")
 ### 错误处理
 
 - 配置为空 → 不做房间选择，保持原有行为
-- 房间列表未加载 → 超时等待，记录警告，继续原有流程
+- 房间列表未加载（15 秒超时）→ 记录警告，继续原有流程
 - 配置的房间未找到匹配 → 记录警告日志，不做选择，保持默认
 - 房间列表加载后无元素 → 记录警告，跳过选择
+- `execute_script` 调用异常（`__vue__` 为 undefined、`check` 不存在、JS 异常）→
+  try/except 捕获，记录警告日志，降级为仅点击 radio button，不影响主流程
+- 以上所有异常处理均不阻塞 `click_recharge_button()` 的调用
 
 ## 不涉及的部分
 
