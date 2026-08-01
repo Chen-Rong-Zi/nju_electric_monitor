@@ -10,5 +10,6 @@
     "enable_email_alert": true,
     "alert_threshold_warn": 15,
     "alert_threshold_high": 10,
-    "alert_threshold_critical": 5
+    "alert_threshold_critical": 5,
+    "room": ""
 } 
